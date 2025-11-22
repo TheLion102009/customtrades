@@ -1,0 +1,83 @@
+# Beispiel Trader Konfiguration
+# Pfad: plugins/customtraders/traders/example_trader.yml
+
+name: BeispielHaendler
+mobType: VILLAGER
+displayName: "§6§lÈpischer Händler"
+persistent: true
+
+location:
+  world: world
+  x: 100.5
+  y: 64.0
+  z: 200.5
+  yaw: 0.0
+  pitch: 0.0
+
+# Liste der verfügbaren Trades
+trades:
+  # Trade 1: 10 Diamanten für 1 Emerald
+  0:
+    input1:
+      type: VANILLA
+      material: DIAMOND
+      amount: 10
+      displayName: null
+      lore: []
+    input2: null  # Kein zweites Input-Item
+    output:
+      type: VANILLA
+      material: EMERALD
+      amount: 1
+      displayName: null
+      lore: []
+    maxUses: -1  # Unlimited
+    playerPointsCost: 0  # Keine PlayerPoints benötigt
+
+  # Trade 2: Nexo Custom Item für 5 Emeralds
+  1:
+    input1:
+      type: VANILLA
+      material: EMERALD
+      amount: 5
+    input2: null
+    output:
+      type: NEXO
+      nexoId: mystical_sword  # Nexo Item ID
+      amount: 1
+    maxUses: 10  # Kann nur 10 mal gehandelt werden
+    playerPointsCost: 0
+
+  # Trade 3: Nur PlayerPoints - kein Item als Zahlung
+  2:
+    input1:
+      type: NONE  # Kein Item benötigt
+      material: null
+      nexoId: null
+      amount: 1
+    input2: null
+    output:
+      type: VANILLA
+      material: DIAMOND_SWORD
+      amount: 1
+      displayName: "§bLegendäres Schwert"
+      lore:
+        - "§7Ein mächtiges Schwert"
+        - "§7Gekauft mit PlayerPoints"
+    maxUses: 1  # Kann nur einmal gekauft werden
+    playerPointsCost: 1000  # Kostet 1000 PlayerPoints
+
+  # Trade 4: Item + PlayerPoints Kombination
+  3:
+    input1:
+      type: VANILLA
+      material: IRON_INGOT
+      amount: 32
+    input2: null
+    output:
+      type: NEXO
+      nexoId: special_armor
+      amount: 1
+    maxUses: -1
+    playerPointsCost: 500  # 32 Eisenbarren + 500 PlayerPoints
+

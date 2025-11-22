@@ -1,0 +1,37 @@
+name: CustomTrades
+version: ${version}
+main: de.customtrades.CustomTradesPlugin
+api-version: '1.21'
+folia-supported: true
+author: YourName
+description: Custom Trader NPCs mit Nexo und PlayerPoints Support
+
+commands:
+  customtrades:
+    description: CustomTrades Hauptbefehl
+    aliases: [ct]
+    usage: /ct <create|edit|remove|list>
+    permission: customtrades.use
+
+permissions:
+  customtrades.use:
+    description: Zugriff auf alle CustomTrades Befehle
+    default: op
+  customtrades.create:
+    description: Trader erstellen
+    default: op
+  customtrades.edit:
+    description: Trader bearbeiten
+    default: op
+  customtrades.remove:
+    description: Trader entfernen
+    default: op
+  customtrades.list:
+    description: Alle Trader auflisten
+    default: op
+  customtrades.reload:
+    description: Trader neu laden
+    default: op
+
+softdepend: [PlayerPoints, Nexo]
+
