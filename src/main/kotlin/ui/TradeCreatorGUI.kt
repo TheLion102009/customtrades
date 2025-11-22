@@ -9,7 +9,6 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Bukkit
 import org.bukkit.Material
-import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
@@ -376,10 +375,10 @@ class TradeCreatorGUI(
             plugin.traderManager.updateTrader(trader)
         }
 
-        // Reopen inventory
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        // Reopen inventory (Paper API)
+        plugin.server.globalRegionScheduler.run(plugin) { _ ->
             open(event.player)
-        })
+        }
     }
 
     @EventHandler

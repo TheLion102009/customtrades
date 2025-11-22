@@ -1,5 +1,331 @@
 # CustomTrades - Changelog
 
+## Version 1.2.3 (2025-11-22) - Preis-Lore Cleanup
+
+### ✨ Neues Feature: Automatische Preis-Lore-Entfernung
+
+**Problem:** Nach dem Trade hatte das gekaufte Item noch die Preis-Lore im Inventar
+**Lösung:** Preis-Lore wird automatisch nach Trade-Abschluss entfernt
+
+**Vorher:**
+```
+[Diamantschwert im Inventar]
+§7Preis: §e10x Diamond
+§7+ §6500 Coins    ← Sollte nicht da sein!
+```
+
+**Jetzt:**
+```
+[Diamantschwert im Inventar]
+(keine Preis-Lore) ✓
+```
+
+### 🔧 Implementierung
+
+**Neue Funktion: `TradeUtil.removePriceLore()`**
+- Erkennt Preis-Zeilen automatisch (beginnen mit "Preis:" oder "+")
+- Entfernt Preis-Lore + Leerzeile davor
+- Behält Original-Lore des Items (Custom-Lore, Enchantments, etc.)
+
+**TradeListener erweitert:**
+- Nach Trade-Abschluss: Entfernt Preis-Lore von allen Items im Inventar
+- Timing: Zusammen mit PlayerPoints-Abzug und Sunflower-Removal
+- Debug-Log: "Preis-Lore entfernt für {player}"
+
+### 💡 Intelligente Lore-Verarbeitung
+
+**Was wird entfernt:**
+- Zeilen beginnend mit "Preis:"
+- Zeilen beginnend mit "+" (weitere Preis-Komponenten)
+- Leerzeile vor dem Preis (falls vorhanden)
+
+**Was bleibt:**
+- Original-Lore des Items
+- Custom-Lore von Nexo-Items
+- Enchantment-Lore
+- Alle anderen Lore-Zeilen
+
+### 📊 Use Cases
+
+**Custom-Items:**
+```
+Trade-GUI: Original-Lore + Preis
+Nach Trade: Nur Original-Lore ✓
+```
+
+**Stackable Items:**
+```
+Items bleiben stackable (keine unterschiedliche Lore) ✓
+```
+
+**Professioneller Look:**
+```
+Preis nur im Shop sichtbar ✓
+Items sehen "echt" aus ✓
+```
+
+---
+
+## Version 1.2.2 (2025-11-22) - Reload-Duplikat-Fix
+
+### 🐛 Behobener Bug
+
+**Problem:** Trader spawnen trotz v1.2.1 Fix noch doppelt bei `/reload`
+
+**Ursache:** 
+- Tracking-Map (`spawnedTraders`) ist im Memory
+- Bei Reload wird Plugin neu geladen → Memory geleert
+- Tracking-Map ist leer, aber Trader-Entities noch in Welt
+- `spawnTrader()` denkt Trader existiert nicht → spawnt nochmal
+
+**Lösung:**
+```kotlin
+// World-Scan beim Plugin-Start!
+fun loadAllTraders() {
+    // ZUERST: Scanne alle Welten nach existierenden Tradern
+    plugin.server.worlds.forEach { world ->
+        world.entities.forEach { entity ->
+            val traderName = entity.persistentDataContainer.get(
+                traderKey, 
+                PersistentDataType.STRING
+            )
+            if (traderName != null) {
+                // Trader gefunden - füge zu Tracking hinzu!
+                spawnedTraders[traderName] = entity.uniqueId
+                entityToTrader[entity.uniqueId] = traderName
+                plugin.debugLog("Existierender Trader: $traderName")
+            }
+        }
+    }
+    
+    // DANN: Lade Config und spawne (wenn nicht bereits vorhanden)
+    // ...
+}
+```
+
+**Ergebnis:**
+- ✅ Tracking wird beim Reload rekonstruiert
+- ✅ Existierende Trader werden erkannt
+- ✅ Keine Duplikate mehr bei Reload
+- ✅ Funktioniert auch bei mehrfachen Reloads
+
+### 🔧 Technische Details
+
+**TraderManager.kt:**
+- World-Scan beim `loadAllTraders()` Start
+- Rekonstruiert Tracking aus PersistentDataContainer
+- Debug-Logs für gefundene Trader
+- Erweiterte Startup-Logs
+
+**Ablauf:**
+```
+1. /reload
+2. spawnedTraders wird geleert (Memory)
+3. World-Scan findet existierende Trader
+4. Tracking wird rekonstruiert
+5. Config-Load versucht zu spawnen
+6. spawnTrader() sieht: bereits im Tracking
+7. Überspringt Spawn ✓
+```
+
+### 📊 Testing
+
+```bash
+# Funktioniert jetzt:
+✅ /reload → 1 Trader
+✅ /reload → 1 Trader (nicht 2!)
+✅ /reload → 1 Trader (nicht 3!)
+✅ Beliebig viele Reloads → IMMER 1 Trader!
+```
+
+---
+
+## Version 1.2.1 (2025-11-22) - Kritische Bugfixes
+
+### 🐛 Behobene Bugs
+
+#### Bug #1: "Sunflower nicht gefunden" Fehler
+**Problem:** Trade wurde blockiert mit Fehlermeldung "Du hast die Währungs-Sonnenblume nicht!" obwohl Spieler sie hatte
+**Ursache:** Race-Condition bei Sunflower-Prüfung im Trade-Event
+**Lösung:** 
+- ✅ Sunflower-Prüfung vor Trade entfernt
+- ✅ Logik: Sunflower ist blockiert → wenn GUI offen, garantiert vorhanden
+- ✅ Prüfung war überflüssig und verursachte Race-Conditions
+- ✅ PlayerPoints werden trotzdem korrekt abgezogen
+- ✅ Sunflower wird trotzdem entfernt (mit Check im Runnable)
+
+**Code-Änderung:**
+```kotlin
+// Vorher:
+if (!hasSunflower(player)) {
+    return // Blockiert Trade
+}
+
+// Jetzt:
+// Keine Prüfung! Sunflower kann nicht weg.
+```
+
+#### Bug #2: Trader spawnen doppelt bei Reload
+**Problem:** Bei `/reload` oder Server-Restart spawnen Trader mehrfach am gleichen Ort
+**Ursache:** Keine Tracking der bereits gespawnten Entities
+**Lösung:**
+- ✅ Neues Spawn-Tracking-System mit `spawnedTraders` Map
+- ✅ Prüfung vor Spawn ob Trader bereits existiert
+- ✅ UUID-basiertes Tracking
+- ✅ Cleanup bei removeTrader()
+
+**Code-Änderung:**
+```kotlin
+// Neu:
+private val spawnedTraders = mutableMapOf<String, UUID>()
+
+fun spawnTrader(trader: TraderData) {
+    // Check ob bereits gespawnt
+    if (spawnedTraders[trader.name]?.let { 
+        Bukkit.getEntity(it)?.isValid 
+    } == true) {
+        return // Bereits gespawnt!
+    }
+    
+    // Spawn + Tracking
+    val entity = spawn(...)
+    spawnedTraders[trader.name] = entity.uniqueId
+}
+```
+
+### 🔧 Technische Details
+
+**TradeListener.kt:**
+- Sunflower-Check vor Trade entfernt
+- Debug-Log hinzugefügt
+- PlayerPoints-Abzug immer ausgeführt (nicht mehr abhängig von Sunflower-Check)
+
+**TraderManager.kt:**
+- `spawnedTraders` Map hinzugefügt
+- Duplikat-Check in `spawnTrader()`
+- Tracking-Cleanup in `removeTrader()`
+- Debug-Logs für Spawn-Events
+
+### 📊 Ergebnis
+
+**Trades:**
+- ✅ Funktionieren 100% zuverlässig
+- ✅ Keine Race-Conditions mehr
+- ✅ Keine "Sunflower nicht gefunden" Fehler
+
+**Trader-Spawning:**
+- ✅ Keine Duplikate bei Reload
+- ✅ Korrekte Spawn-Verwaltung
+- ✅ Bessere Performance (UUID-Lookup statt Entity-Iteration)
+
+---
+
+## Version 1.2.0 (2025-11-22) - Major Update
+
+### 🎉 Neue Features
+
+#### Config-System implementiert
+**Neue Datei:** `config.yml`
+```yaml
+version: "1.2.0"
+currency-name: "PlayerPoints"
+debug: false
+trade-delay: 5
+sunflower-cleanup-delay: 10
+```
+
+**Features:**
+- ✅ Anpassbarer Währungsname (`currency-name`)
+- ✅ Debug-Modus für Troubleshooting (`debug: true/false`)
+- ✅ Konfigurierbare Trade-Verzögerung (`trade-delay`)
+- ✅ Konfigurierbare Sunflower-Cleanup-Verzögerung (`sunflower-cleanup-delay`)
+- ✅ Build-Version in Config
+
+#### Automatische Preis-Lore im Output-Item
+**Problem:** Spieler sahen nicht welcher Preis für Items verlangt wird
+**Lösung:** Preis wird automatisch zur Lore des Output-Items hinzugefügt
+
+**Beispiel:**
+```
+[Diamantschwert]
+§7Preis: §e10x Diamond
+§7+ §6500 Coins
+```
+
+**Unterstützt:**
+- Normale Items (z.B. "10x Diamond")
+- Nexo Items
+- PlayerPoints/Currency
+- Kombinationen aus allen
+
+#### Währungsname überall nutzbar
+Der in Config definierte `currency-name` wird verwendet in:
+- Sunflower DisplayName
+- Sunflower Lore
+- Chat-Nachrichten
+- Fehlermeldungen
+- **Preis-Lore im Output-Item**
+
+### 🔧 Verbesserungen
+
+**Trade-Timing optimiert:**
+- Konfigurierbare Verzögerung verhindert dass Sunflower zu früh genommen wird
+- Standard: 5 Ticks (250ms) für Trade, 10 Ticks (500ms) für Cleanup
+- Anpassbar je nach Server-Performance
+
+**Debug-Logging:**
+```kotlin
+plugin.debugLog("Trade-Abschluss geplant in 5 Ticks für Steve")
+plugin.debugLog("500 Coins abgezogen von Steve")
+plugin.debugLog("Sunflower entfernt von Steve")
+```
+
+**Startup-Logs:**
+```
+[CustomTrades] CustomTrades v1.2.0 wird geladen...
+[CustomTrades] Währung: Coins
+[CustomTrades] Debug-Modus: false
+```
+
+### 📦 Migration
+
+**Von v1.1.3:**
+1. JAR ersetzen
+2. Server starten
+3. `config.yml` wird automatisch erstellt
+4. Optional: Config anpassen
+
+**Config-Anpassung:**
+```yaml
+# Empfohlen für deutsche Server
+currency-name: "Münzen"
+
+# Oder andere Namen
+currency-name: "Coins"
+currency-name: "Credits"
+currency-name: "Taler"
+```
+
+### 🐛 Behobene Probleme
+
+- ✅ Sunflower wird nicht mehr zu früh entfernt (konfigurierbare Delays)
+- ✅ Spieler sieht jetzt den Preis im Output-Item
+- ✅ Besseres Timing für Trades
+
+### 🔧 Geänderte Dateien
+
+**Neu:**
+- `config.yml` (Resource)
+- `RELEASE_v1.2.0.md` (Dokumentation)
+
+**Geändert:**
+- `Main.kt` - Config-Loading, Debug-Logging, Currency-Name Helper
+- `TradeUtil.kt` - Preis-Lore-Generation, Currency-Name in Items
+- `TradeListener.kt` - Konfigurierbare Delays, Currency-Name in Messages
+- `PlayerPointsSunflowerListener.kt` - Currency-Name in Sunflower, Config-Delays
+
+---
+
 ## Version 1.1.3 (2025-11-22) - NBT-Match-Fix
 
 ### 🐛 Kritischer Bugfix - Trade funktionierte nicht

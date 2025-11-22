@@ -24,9 +24,27 @@ class CustomTradesPlugin : JavaPlugin() {
     var hasNexo = false
         private set
 
+    fun debugLog(message: String) {
+        if (config.getBoolean("debug", false)) {
+            logger.info("[DEBUG] $message")
+        }
+    }
+
+    fun getCurrencyName(): String {
+        return config.getString("currency-name", "PlayerPoints") ?: "PlayerPoints"
+    }
+
     override fun onEnable() {
         // Create plugin data folder
         dataFolder.mkdirs()
+
+        // Save default config
+        saveDefaultConfig()
+
+        // Log version and settings
+        logger.info("CustomTrades v${description.version} wird geladen...")
+        logger.info("Währung: ${config.getString("currency-name", "PlayerPoints")}")
+        logger.info("Debug-Modus: ${config.getBoolean("debug", false)}")
 
         // Initialize managers
         configManager = ConfigManager(this)

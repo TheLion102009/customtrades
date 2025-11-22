@@ -39,12 +39,13 @@ class PlayerPointsSunflowerListener(private val plugin: CustomTradesPlugin) : Li
         }
 
         // Erstelle spezielle Sunflower
+        val currencyName = plugin.getCurrencyName()
         val sunflower = ItemStack(Material.SUNFLOWER, 1)
         val meta = sunflower.itemMeta
-        meta.displayName(Component.text("§6§lPlayerPoints Währung"))
+        meta.displayName(Component.text("§6§l$currencyName Währung"))
         meta.lore(listOf(
             Component.text("§7Diese Sonnenblume repräsentiert"),
-            Component.text("§7deine PlayerPoints für diesen Trade"),
+            Component.text("§7deine $currencyName für diesen Trade"),
             Component.text(""),
             Component.text("§c§lKann nicht bewegt oder weggeworfen werden!")
         ))
@@ -151,16 +152,21 @@ class PlayerPointsSunflowerListener(private val plugin: CustomTradesPlugin) : Li
 
         // Entferne Sunflower immer wenn GUI geschlossen wird
         if (activePlayers.contains(player) || hasSunflower(player)) {
-            // Kleine Verzögerung damit Trade durchgeht
-            plugin.server.scheduler.runTaskLater(plugin, Runnable {
+            // Verzögerung aus Config
+            val delay = plugin.config.getLong("sunflower-cleanup-delay", 10L)
+            plugin.debugLog("Sunflower-Cleanup geplant in $delay Ticks für ${player.name}")
+
+            // Paper API: Verwende global region scheduler
+            plugin.server.globalRegionScheduler.runDelayed(plugin, { _ ->
                 if (hasSunflower(player)) {
                     removeSunflower(player)
                     player.sendMessage(
                         Component.text("Währungs-Sonnenblume wurde entfernt.")
                             .color(NamedTextColor.YELLOW)
                     )
+                    plugin.debugLog("Sunflower entfernt von ${player.name}")
                 }
-            }, 2L) // 2 Ticks Verzögerung
+            }, delay) // Ticks delay
         }
     }
 

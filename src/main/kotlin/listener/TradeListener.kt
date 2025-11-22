@@ -68,39 +68,54 @@ class TradeListener(private val plugin: CustomTradesPlugin) : Listener {
             val currentPoints = ppAPI.api.look(player.uniqueId)
 
             if (currentPoints < tradeData.playerPointsCost) {
+                val currencyName = plugin.getCurrencyName()
                 player.sendMessage(
-                    Component.text("Du hast nicht genug PlayerPoints! Benötigt: ${tradeData.playerPointsCost}, Du hast: $currentPoints")
+                    Component.text("Du hast nicht genug $currencyName! Benötigt: ${tradeData.playerPointsCost}, Du hast: $currentPoints")
                         .color(NamedTextColor.RED)
                 )
                 event.isCancelled = true
                 player.closeInventory()
+                plugin.debugLog("${player.name} hat nicht genug $currencyName: ${currentPoints}/${tradeData.playerPointsCost}")
                 return
             }
 
-            // Prüfe ob Spieler die Sunflower hat
-            if (!plugin.sunflowerListener.hasSunflower(player)) {
-                player.sendMessage(
-                    Component.text("Du hast die Währungs-Sonnenblume nicht! Trade abgebrochen.")
-                        .color(NamedTextColor.RED)
-                )
-                event.isCancelled = true
-                player.closeInventory()
-                return
-            }
+            // Sunflower-Prüfung NICHT mehr nötig!
+            // Grund: Sunflower kann nicht aus dem Inventar entfernt werden (blockiert)
+            // Wenn Spieler das GUI öffnen konnte, hat er die Sunflower garantiert
+            plugin.debugLog("${player.name} hat genug ${plugin.getCurrencyName()}, Trade wird durchgeführt")
 
             // Deduct points and remove sunflower after successful trade
-            // Schedule with delay to ensure trade completes first
-            plugin.server.scheduler.runTaskLater(plugin, Runnable {
-                // Prüfe nochmal ob Sunflower noch da ist (Trade könnte abgebrochen sein)
+            // Schedule with delay from config to ensure trade completes first
+            val delay = plugin.config.getLong("trade-delay", 5L)
+            plugin.debugLog("Trade-Abschluss geplant in $delay Ticks für ${player.name}")
+
+            // Paper API: Verwende global region scheduler statt legacy Bukkit scheduler
+            plugin.server.globalRegionScheduler.runDelayed(plugin, { _ ->
+                // Ziehe PlayerPoints ab
+                ppAPI.api.take(player.uniqueId, tradeData.playerPointsCost)
+
+                // Entferne Sunflower (falls noch vorhanden)
                 if (plugin.sunflowerListener.hasSunflower(player)) {
-                    ppAPI.api.take(player.uniqueId, tradeData.playerPointsCost)
                     plugin.sunflowerListener.removeSunflower(player)
-                    player.sendMessage(
-                        Component.text("✓ ${tradeData.playerPointsCost} PlayerPoints wurden abgezogen.")
-                            .color(NamedTextColor.GREEN)
-                    )
+                    plugin.debugLog("Sunflower entfernt von ${player.name}")
                 }
-            }, 1L) // 1 Tick delay
+
+                val currencyName = plugin.getCurrencyName()
+                player.sendMessage(
+                    Component.text("✓ ${tradeData.playerPointsCost} $currencyName wurden abgezogen.")
+                        .color(NamedTextColor.GREEN)
+                )
+                plugin.debugLog("${tradeData.playerPointsCost} $currencyName abgezogen von ${player.name}")
+
+                // Entferne Preis-Lore von allen Items im Inventar die vom Trade stammen
+                player.inventory.contents.forEachIndexed { index, item ->
+                    if (item != null && item.type != org.bukkit.Material.AIR) {
+                        val cleanedItem = de.customtrades.util.TradeUtil.removePriceLore(item)
+                        player.inventory.setItem(index, cleanedItem)
+                    }
+                }
+                plugin.debugLog("Preis-Lore von Items entfernt für ${player.name}")
+            }, delay) // Ticks delay
         }
     }
 }

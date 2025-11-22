@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "de.customtrades"
-version = "1.1.3"
+version = "1.2.3"
 
 repositories {
     mavenCentral()

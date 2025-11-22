@@ -17,6 +17,7 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
     private val traders = mutableMapOf<String, TraderData>()
     private val entityToTrader = mutableMapOf<UUID, String>()
     private val traderKey = NamespacedKey(plugin, "trader_name")
+    private val spawnedTraders = mutableMapOf<String, UUID>() // Tracking für gespawnte Trader
 
     fun createTrader(name: String, entityType: EntityType, location: Location): Boolean {
         if (traders.containsKey(name)) {
@@ -92,7 +93,11 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
             }
         }
 
+        // Entferne aus Tracking
+        spawnedTraders.remove(name)
+
         plugin.configManager.deleteTrader(name)
+        plugin.debugLog("Trader $name entfernt")
         return true
     }
 
@@ -118,6 +123,20 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
     }
 
     fun loadAllTraders() {
+        // Zuerst: Finde alle bereits existierenden Trader in der Welt
+        // und füge sie zum Tracking hinzu (wichtig bei Reload!)
+        plugin.server.worlds.forEach { world ->
+            world.entities.forEach { entity ->
+                val traderName = entity.persistentDataContainer.get(traderKey, PersistentDataType.STRING)
+                if (traderName != null) {
+                    // Trader bereits in Welt - füge zu Tracking hinzu
+                    spawnedTraders[traderName] = entity.uniqueId
+                    entityToTrader[entity.uniqueId] = traderName
+                    plugin.debugLog("Existierender Trader gefunden: $traderName (UUID: ${entity.uniqueId})")
+                }
+            }
+        }
+
         val traderNames = plugin.configManager.getAllTraderNames()
 
         traderNames.forEach { name ->
@@ -131,7 +150,7 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
             }
         }
 
-        plugin.logger.info("${traders.size} Trader geladen.")
+        plugin.logger.info("${traders.size} Trader geladen, ${spawnedTraders.size} in Welt gefunden.")
     }
 
     fun saveAllTraders() {
@@ -141,6 +160,22 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
     }
 
     private fun spawnTrader(trader: TraderData) {
+        // Prüfe ob Trader bereits gespawnt ist
+        val existingUUID = spawnedTraders[trader.name]
+        if (existingUUID != null) {
+            // Prüfe ob Entity noch existiert
+            val existingEntity = Bukkit.getEntity(existingUUID)
+            if (existingEntity != null && existingEntity.isValid) {
+                plugin.debugLog("Trader ${trader.name} ist bereits gespawnt, überspringe...")
+                return
+            } else {
+                // Entity existiert nicht mehr, entferne aus Tracking
+                spawnedTraders.remove(trader.name)
+                entityToTrader.remove(existingUUID)
+                plugin.debugLog("Alter Trader ${trader.name} nicht mehr gefunden, spawne neu...")
+            }
+        }
+
         val world = Bukkit.getWorld(trader.location.world) ?: return
         val location = Location(
             world,
@@ -172,6 +207,9 @@ class TraderManager(private val plugin: CustomTradesPlugin) {
             entity.removeWhenFarAway = false // Despawnt nie
 
             entityToTrader[entity.uniqueId] = trader.name
+            spawnedTraders[trader.name] = entity.uniqueId // Tracking hinzufügen
+
+            plugin.debugLog("Trader ${trader.name} erfolgreich gespawnt (UUID: ${entity.uniqueId})")
         } catch (e: Exception) {
             plugin.logger.warning("Konnte Trader ${trader.name} nicht spawnen: ${e.message}")
         }

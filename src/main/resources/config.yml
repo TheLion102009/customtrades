@@ -1,0 +1,18 @@
+# CustomTrades Configuration
+
+# Plugin Version (automatisch gesetzt)
+version: "1.2.3"
+
+# Währungsname (wird in Nachrichten und Lore angezeigt)
+currency-name: "PlayerPoints"
+
+# Debug-Modus (zeigt zusätzliche Informationen in Console)
+debug: false
+
+# Trade-Verzögerung in Ticks (1 Tick = 50ms)
+# Verhindert dass Items zu früh genommen werden
+trade-delay: 5
+
+# Sunflower-Cleanup-Verzögerung in Ticks
+sunflower-cleanup-delay: 10
+
