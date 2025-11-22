@@ -1,5 +1,84 @@
 # CustomTrades - Changelog
 
+## Version 1.3.0 (2025-11-22) - Paper API Migration
+
+### 🚀 Paper API statt Bukkit!
+
+**Große Änderung:** Das Plugin basiert jetzt vollständig auf der Paper API statt der veralteten Bukkit API.
+
+### 🔧 Hauptänderungen
+
+**Scheduler-Migration:**
+- ❌ `Bukkit.getScheduler().runTaskLater()` (veraltet)
+- ✅ `server.globalRegionScheduler.runDelayed()` (modern)
+
+**Vorteile:**
+- ✅ Zukunftssicher (Paper wird aktiv entwickelt)
+- ✅ Bessere Performance (Paper-optimiert)
+- ✅ Folia-kompatibel (Region-based Scheduler)
+- ✅ Modernere Code-Basis
+
+### 📝 Geänderte Dateien
+
+**TradeListener.kt:**
+- Paper Region Scheduler statt Bukkit Scheduler
+- Modernere Lambda-Syntax
+
+**PlayerPointsSunflowerListener.kt:**
+- Paper Region Scheduler für delayed tasks
+- Cleanup mit Paper API
+
+**TradeCreatorGUI.kt:**
+- Paper Scheduler für GUI-Reopening
+- Entfernte unnötige Bukkit-Imports
+
+### 🎯 Kompatibilität
+
+**Unterstützt:**
+- ✅ Paper 1.21.3+ (empfohlen)
+- ✅ Paper 1.21.x (alle Versionen)
+- ✅ Folia 1.21.x (Region Scheduler vorbereitet)
+
+**NICHT mehr unterstützt:**
+- ❌ Bukkit/Spigot (nur Paper Server!)
+
+### 💡 Für Server-Admins
+
+**Keine Änderungen nötig!**
+- ✅ Alle Features funktionieren gleich
+- ✅ Config bleibt unverändert
+- ✅ Commands bleiben gleich
+- ✅ Trader & Trades bleiben erhalten
+
+**Update:**
+1. Server stoppen
+2. JAR ersetzen
+3. Server starten (muss Paper sein!)
+4. ✅ Fertig!
+
+### 🔧 Technische Details
+
+**Paper Region Scheduler:**
+```kotlin
+// Modern: Paper API
+server.globalRegionScheduler.runDelayed(plugin, { _ ->
+    code()
+}, ticks)
+
+// Alt: Bukkit API (entfernt)
+Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+    code()
+}, ticks)
+```
+
+**Warum Paper?**
+- Paper ist die Zukunft von Minecraft Servern
+- Bessere Performance & Features
+- Aktive Entwicklung
+- Folia-Vorbereitung (Multi-threading)
+
+---
+
 ## Version 1.2.3 (2025-11-22) - Preis-Lore Cleanup
 
 ### ✨ Neues Feature: Automatische Preis-Lore-Entfernung

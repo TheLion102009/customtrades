@@ -1,7 +1,7 @@
 # CustomTrades Configuration
 
 # Plugin Version (automatisch gesetzt)
-version: "1.2.3"
+version: "1.3.0"
 
 # Währungsname (wird in Nachrichten und Lore angezeigt)
 currency-name: "PlayerPoints"
