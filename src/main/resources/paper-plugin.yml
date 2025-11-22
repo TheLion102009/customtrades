@@ -1,0 +1,36 @@
+name: CustomTrades
+version: '1.3.0'
+main: de.customtrades.CustomTradesPlugin
+api-version: '1.21'
+description: Custom Trader NPCs with advanced trading features for Paper servers
+
+
+permissions:
+  customtrades.use:
+    description: Access to all commands
+    default: op
+  customtrades.create:
+    description: Create traders
+    default: op
+  customtrades.edit:
+    description: Edit traders
+    default: op
+  customtrades.remove:
+    description: Remove traders
+    default: op
+  customtrades.list:
+    description: List all traders
+    default: op
+  customtrades.reload:
+    description: Reload traders
+    default: op
+
+dependencies:
+  server:
+    PlayerPoints:
+      load: BEFORE
+      required: false
+    Nexo:
+      load: BEFORE
+      required: false
+

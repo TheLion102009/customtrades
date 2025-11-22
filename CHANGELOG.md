@@ -6,6 +6,27 @@
 
 **Große Änderung:** Das Plugin basiert jetzt vollständig auf der Paper API statt der veralteten Bukkit API.
 
+### ⚠️ Wichtiger Fix: Paper Plugin Command-System
+
+**Problem:** Paper Plugins unterstützen KEINE YAML-basierten Command-Deklarationen!
+
+**Behoben:**
+- ✅ Commands aus `paper-plugin.yml` entfernt
+- ✅ Programmatische Command-Registrierung implementiert
+- ✅ `server.commandMap.register()` statt `getCommand()`
+- ✅ Funktioniert jetzt korrekt als Paper Plugin
+
+### ✨ Tab-Completion / Auto-Complete
+
+**Problem:** Kein Auto-Complete für Commands im Chat
+
+**Behoben:**
+- ✅ `tabComplete()` Override in Command-Klasse hinzugefügt
+- ✅ Auto-Complete für Subcommands (`create`, `edit`, `remove`, `list`, `reload`)
+- ✅ Auto-Complete für Trader-Namen (bei `/ct remove <TAB>`)
+- ✅ Auto-Complete für Mob-Typen (bei `/ct create <name> <TAB>`)
+- ✅ Intelligentes Filtering basierend auf Eingabe
+
 ### 🔧 Hauptänderungen
 
 **Scheduler-Migration:**

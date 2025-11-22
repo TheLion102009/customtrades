@@ -69,8 +69,37 @@ class CustomTradesPlugin : JavaPlugin() {
         // Initialize sunflower listener
         sunflowerListener = de.customtrades.listener.PlayerPointsSunflowerListener(this)
 
-        // Register commands
-        getCommand("customtrades")?.setExecutor(CustomTradesCommand(this))
+        // Register commands (Paper Plugin Style - programmatisch)
+        val commandExecutor = CustomTradesCommand(this)
+
+        // Erstelle Command manuell mit Tab-Completion
+        val command = object : org.bukkit.command.Command(
+            "customtrades",
+            "Main CustomTrades command",
+            "/customtrades <create|edit|remove|list|reload>",
+            listOf("ct", "trade", "trades")
+        ) {
+            override fun execute(
+                sender: org.bukkit.command.CommandSender,
+                commandLabel: String,
+                args: Array<out String>
+            ): Boolean {
+                return commandExecutor.onCommand(sender, this, commandLabel, args)
+            }
+
+            // Tab-Completion für Auto-Complete
+            override fun tabComplete(
+                sender: org.bukkit.command.CommandSender,
+                alias: String,
+                args: Array<out String>
+            ): List<String> {
+                return commandExecutor.onTabComplete(sender, this, alias, args) ?: emptyList()
+            }
+        }
+
+        // Registriere Command in der CommandMap
+        server.commandMap.register("customtrades", command)
+        debugLog("Commands registriert mit Tab-Completion (Paper Plugin Style)")
 
         // Register listeners
         server.pluginManager.registerEvents(TraderInteractListener(this), this)
