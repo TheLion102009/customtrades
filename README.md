@@ -150,11 +150,6 @@ Das Plugin nutzt:
 ```
 
 Die fertige JAR findest du in `build/libs/CustomTrades-1.0.0.jar`
-
-## Support
-
-Bei Fragen oder Problemen öffne ein Issue auf GitHub.
-
 ## License
 
 MIT License
